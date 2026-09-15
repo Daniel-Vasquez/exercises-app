@@ -174,7 +174,15 @@ coste de migrar crece.
 
 ### ADR-03 — Renderizado: `server` con islas, no `static`
 
-`output: 'server'` + adaptador Node (`@astrojs/node`, modo `standalone`).
+`output: 'server'` + adaptador **`@astrojs/vercel`** (funciones serverless).
+
+> **Actualizado tras el primer despliegue.** El andamiaje se montó con `@astrojs/node`
+> en modo `standalone`, que compila un servidor autónomo en `dist/server/entry.mjs`.
+> Vercel nunca invoca ese entrypoint: su preset de Astro sirve `dist/`, y como
+> `output: 'server'` no emite HTML estático, las rutas se quedan sin nada que servir —
+> el build pasa en verde pero el sitio no funciona. Con `@astrojs/vercel` el build
+> genera `.vercel/output/` (Build Output API), que es lo que Vercel sí consume.
+> `@astrojs/node` sigue siendo la elección correcta si algún día migras a un VPS.
 Todas las rutas son específicas del usuario y están detrás de sesión; el pre-render estático
 no aporta nada. Solo la landing pública de `/` puede marcarse `export const prerender = true`.
 React se usa **exclusivamente como islas** (`client:load` / `client:visible`) para las tres
@@ -688,7 +696,7 @@ con estilos aplicados. Sin lógica de negocio.
 - `src/components/astro/Nav.astro`
 - `.gitignore`, `.env.example` *(ya entregado en esta fase)*
 
-**Decisiones aplicadas:** ADR-02 (`@tailwindcss/vite`) y ADR-03 (`output: 'server'` + `@astrojs/node`).
+**Decisiones aplicadas:** ADR-02 (`@tailwindcss/vite`) y ADR-03 (`output: 'server'` + `@astrojs/vercel`).
 
 **Prerrequisitos de tu lado**
 - 🖐️ **Confirma el ADR-02** antes de que empiece: Astro 7 + Tailwind 4 (recomendado)
@@ -978,7 +986,8 @@ series completadas vs. planificadas · racha de constancia · reparto de volumen
 - Config de despliegue (Vercel/Railway/Fly, según elijas)
 
 **Prerrequisitos de tu lado**
-- 🖐️ Elegir plataforma de despliegue.
+- ✅ Plataforma de despliegue: **Vercel** (decidido y ya conectado al repo).
+- 🖐️ Configurar las variables de entorno en el panel de Vercel (no se heredan del `.env` local).
 - 🔑 Las mismas variables en producción, con `BETTER_AUTH_URL` apuntando al dominio real.
 - 🖐️ En Atlas, `0.0.0.0/0` en *Network Access* si el hosting es serverless.
 
