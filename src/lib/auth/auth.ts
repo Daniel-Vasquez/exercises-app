@@ -65,6 +65,14 @@ export const auth = betterAuth({
     },
   },
 
+  // Registra los errores internos de Better Auth en los logs del servidor.
+  // Por defecto muchos se silencian, y en serverless un fallo silencioso es
+  // indistinguible de un 500 vacío.
+  logger: {
+    level: 'error',
+    disabled: false,
+  },
+
   // Orígenes permitidos. En desarrollo se admite localhost además de la URL
   // configurada, para que la app funcione aunque el .env local apunte a
   // producción por descuido.
