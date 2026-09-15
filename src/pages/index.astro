@@ -2,12 +2,14 @@
 import Layout from '@/layouts/Layout.astro';
 import PruebaIsla from '@/components/react/PruebaIsla.tsx';
 
+const usuario = Astro.locals.user;
+
 // TANDA 0: página única de verificación del andamiaje.
 // En la Tanda 8 esta ruta pasa a tener dos caras: landing sin sesión y
 // dashboard con sesión (entreno de hoy, racha y accesos rápidos).
 const tandas = [
-  { n: 0, titulo: 'Andamiaje', estado: 'en curso', detalle: 'Astro 7 · React 19 · Tailwind 4 · SSR Node' },
-  { n: 1, titulo: 'MongoDB + Better Auth', estado: 'pendiente', detalle: 'Registro, login y sesiones' },
+  { n: 0, titulo: 'Andamiaje', estado: 'hecho', detalle: 'Astro 7 · React 19 · Tailwind 4 · SSR Vercel' },
+  { n: 1, titulo: 'MongoDB + Better Auth', estado: 'en curso', detalle: 'Registro, login y sesiones' },
   { n: 2, titulo: 'Catálogo + traducción', estado: 'pendiente', detalle: '1.324 ejercicios en español' },
   { n: 3, titulo: 'Coaches + onboarding', estado: 'pendiente', detalle: '4 arquetipos y cuestionario' },
   { n: 4, titulo: 'Motor de rutinas', estado: 'pendiente', detalle: 'Generación determinista por reglas' },
@@ -16,14 +18,37 @@ const tandas = [
 
 <Layout titulo="CoachApp — Tanda 0">
   <section class="mb-10">
-    <p class="text-sm font-medium text-acento-600 dark:text-acento-300 mb-2">Tanda 0 · Andamiaje</p>
+    <p class="text-sm font-medium text-acento-600 dark:text-acento-300 mb-2">Tanda 1 · Autenticación</p>
     <h1 class="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
-      El proyecto está en pie.
+      {usuario ? `Hola, ${usuario.name}.` : 'El proyecto está en pie.'}
     </h1>
     <p class="text-lg max-w-2xl" style="color: var(--texto-suave);">
-      Astro en modo servidor, React como islas y Tailwind 4 con el tema definido en CSS.
-      Esta página existe para verificar el andamiaje y desaparece en la Tanda 8.
+      {
+        usuario
+          ? 'Tu sesión está activa. El cuestionario y la selección de coach llegan en la Tanda 3.'
+          : 'Astro en modo servidor, React como islas y Tailwind 4 con el tema en CSS. Crea una cuenta para probar la sesión.'
+      }
     </p>
+
+    {
+      !usuario && (
+        <div class="flex flex-wrap gap-3 mt-6">
+          <a
+            href="/registro"
+            class="min-h-11 inline-flex items-center px-5 rounded-xl bg-acento-500 text-white font-medium hover:bg-acento-600 transition-colors"
+          >
+            Crear cuenta
+          </a>
+          <a
+            href="/login"
+            class="min-h-11 inline-flex items-center px-5 rounded-xl border font-medium transition-colors hover:border-acento-300"
+            style="border-color: var(--borde);"
+          >
+            Entrar
+          </a>
+        </div>
+      )
+    }
   </section>
 
   <section class="mb-10">

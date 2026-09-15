@@ -1,5 +1,5 @@
 // @ts-check
-import { defineConfig } from 'astro/config';
+import { defineConfig, envField } from 'astro/config';
 import react from '@astrojs/react';
 import vercel from '@astrojs/vercel';
 import tailwindcss from '@tailwindcss/vite';
@@ -21,6 +21,22 @@ export default defineConfig({
   // del tema vive en CSS, en src/styles/global.css.
   vite: {
     plugins: [tailwindcss()],
+  },
+
+  // Esquema de variables de entorno (Tanda 1). Astro las valida al arrancar y
+  // las expone tipadas vía `astro:env/server`, en vez de leer process.env a
+  // ciegas. Si falta una o está malformada, el fallo es explícito y temprano,
+  // no un error opaco a mitad del login.
+  env: {
+    schema: {
+      // `startsWith` atrapa comillas sobrantes o esquemas mal escritos.
+      MONGODB_URI: envField.string({ context: 'server', access: 'secret', startsWith: 'mongodb' }),
+      MONGODB_DB_NAME: envField.string({ context: 'server', access: 'secret' }),
+      // 32 chars = lo que produce `openssl rand -base64 32`; descarta secretos de juguete.
+      BETTER_AUTH_SECRET: envField.string({ context: 'server', access: 'secret', min: 32 }),
+      // `url: true` rechaza un valor entrecomillado, que no parsea como URL.
+      BETTER_AUTH_URL: envField.string({ context: 'server', access: 'secret', url: true }),
+    },
   },
 
   server: {

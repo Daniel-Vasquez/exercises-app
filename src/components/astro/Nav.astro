@@ -1,40 +1,78 @@
 ---
-// Tanda 0: navegación estática. En la Tanda 1 pasa a leer la sesión desde
-// Astro.locals para mostrar "Entrar" o el menú de usuario según corresponda.
-const rutaActual = Astro.url.pathname;
+import CerrarSesion from '@/components/react/CerrarSesion.tsx';
 
+const rutaActual = Astro.url.pathname;
+const usuario = Astro.locals.user;
+
+// Las rutas privadas solo se anuncian a quien puede entrar en ellas.
 const enlaces = [
-  { href: '/', texto: 'Inicio' },
   { href: '/rutina', texto: 'Rutina' },
   { href: '/calendario', texto: 'Calendario' },
   { href: '/progreso', texto: 'Progreso' },
 ] as const;
 ---
 
-<header class="border-b sticky top-0 z-10 backdrop-blur" style="border-color: var(--borde); background-color: color-mix(in oklch, var(--superficie) 85%, transparent);">
-  <nav class="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-1" aria-label="Navegación principal">
+<header
+  class="border-b sticky top-0 z-10 backdrop-blur"
+  style="border-color: var(--borde); background-color: color-mix(in oklch, var(--superficie) 85%, transparent);"
+>
+  <nav
+    class="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-1"
+    aria-label="Navegación principal"
+  >
     <a href="/" class="font-bold text-lg mr-4 tracking-tight">
       <span class="text-acento-600 dark:text-acento-300">Coach</span>App
     </a>
 
-    <ul class="flex items-center gap-1 text-sm">
+    {
+      usuario && (
+        <ul class="flex items-center gap-1 text-sm">
+          {enlaces.map(({ href, texto }) => (
+            <li>
+              <a
+                href={href}
+                aria-current={rutaActual === href ? 'page' : undefined}
+                class:list={[
+                  'px-3 py-1.5 rounded-lg transition-colors hover:bg-acento-50 dark:hover:bg-acento-900/40',
+                  rutaActual === href ? 'text-acento-600 dark:text-acento-300 font-medium' : '',
+                ]}
+                style={rutaActual === href ? '' : 'color: var(--texto-suave);'}
+              >
+                {texto}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+
+    <div class="ml-auto flex items-center gap-2 text-sm">
       {
-        enlaces.slice(1).map(({ href, texto }) => (
-          <li>
+        usuario ? (
+          <>
+            <span class="hidden sm:inline" style="color: var(--texto-suave);">
+              {usuario.name}
+            </span>
+            <CerrarSesion client:load />
+          </>
+        ) : (
+          <>
             <a
-              href={href}
-              aria-current={rutaActual === href ? 'page' : undefined}
-              class:list={[
-                'px-3 py-1.5 rounded-lg transition-colors hover:bg-acento-50 dark:hover:bg-acento-900/40',
-                rutaActual === href ? 'text-acento-600 dark:text-acento-300 font-medium' : '',
-              ]}
-              style={rutaActual === href ? '' : 'color: var(--texto-suave);'}
+              href="/login"
+              class="px-3 py-1.5 rounded-lg hover:bg-acento-50 dark:hover:bg-acento-900/40"
+              style="color: var(--texto-suave);"
             >
-              {texto}
+              Entrar
             </a>
-          </li>
-        ))
+            <a
+              href="/registro"
+              class="px-3 py-1.5 rounded-lg bg-acento-500 text-white font-medium hover:bg-acento-600 transition-colors"
+            >
+              Crear cuenta
+            </a>
+          </>
+        )
       }
-    </ul>
+    </div>
   </nav>
 </header>

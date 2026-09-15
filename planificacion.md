@@ -725,7 +725,7 @@ repo en otra máquina, repite ese paso tras `npm install`.
 
 ---
 
-### 🔐 TANDA 1 — MongoDB + Better Auth + sesiones
+### ✅ TANDA 1 — MongoDB + Better Auth + sesiones — **COMPLETADA**
 
 **Objetivo.** Un usuario puede registrarse con nombre/correo/contraseña, iniciar sesión,
 mantener la sesión entre recargas y cerrar sesión. Las rutas privadas quedan protegidas.
@@ -750,12 +750,44 @@ mantener la sesión entre recargas y cerrar sesión. Las rutas privadas quedan p
 - 🔑 `BETTER_AUTH_URL=http://localhost:4321`
 
 **Criterio de aceptación**
-- [ ] Registro con nombre/correo/contraseña crea documento en `user` (contraseña **hasheada**).
-- [ ] Login correcto crea `session` y deja cookie httpOnly; login inválido da error claro.
-- [ ] Visitar `/rutina` sin sesión redirige a `/login`; con sesión, entra.
-- [ ] La sesión sobrevive a un refresco completo del navegador.
-- [ ] Cerrar sesión invalida la cookie y vuelve a bloquear las rutas privadas.
-- [ ] **Sin verificación de correo ni flujo de recuperación** (según spec).
+- [x] Registro crea documento en `user`; la contraseña se guarda **hasheada** (161 chars) en
+      `account`, nunca en `user`, y no aparece en la respuesta de la API.
+- [x] Login correcto crea `session` con cookie `httpOnly`; con contraseña incorrecta devuelve
+      401 `INVALID_EMAIL_OR_PASSWORD`, correo duplicado 422 y contraseña corta 400.
+- [x] `/rutina`, `/calendario` y `/progreso` sin sesión → 302 a `/login?redirigir=…`;
+      con sesión → 200.
+- [x] Cerrar sesión invalida la cookie: `get-session` pasa a `null` y `/rutina` vuelve a 302.
+- [x] Aislamiento multi-usuario: dos cuentas obtienen `id` de sesión distintos.
+- [x] **Sin verificación de correo ni recuperación de contraseña** (según spec).
+- [ ] **Pendiente de tu comprobación:** el flujo completo en un navegador real (la extensión de
+      Chrome sigue sin conectar). Registro → sesión persistente tras F5 → salir.
+
+**Hallazgos de esta tanda (afectan a tandas posteriores):**
+
+1. **`userId` se almacena como `ObjectId`, no como `string`.** El modelo de datos de §4
+   asumía string. A partir de la Tanda 3, las colecciones de dominio (`profiles`, `routines`,
+   `workout_logs`) deben guardar `userId` como `ObjectId` para poder cruzarse con las
+   colecciones de Better Auth; si no, todo `$lookup` y todo filtro fallarán en silencio
+   devolviendo cero resultados.
+2. **Better Auth no crea índices.** Solo existía `_id_`. Como el middleware resuelve la sesión
+   por `token` en **cada petición**, eso era un escaneo completo de colección por request.
+   Creados en `scripts/ensure-indexes.ts` (adelantado desde la Tanda 9): `user.email` único,
+   `session.token` único, `session.userId`, `session.expiresAt`, `account.userId`,
+   `account.{providerId,accountId}`. Verificado que el índice único rechaza duplicados con
+   `E11000`, lo que cierra la condición de carrera entre comprobar y registrar.
+3. **El prefijo `__Secure-` de la cookie lo decide `advanced.useSecureCookies`**, no el
+   atributo `secure`. Si se infiere del esquema de `BETTER_AUTH_URL`, un `.env` local que
+   apunte al dominio de producción emite cookies `__Secure-`, que **el navegador rechaza sobre
+   `http://localhost`**: el login parece funcionar pero la sesión no persiste, sin error
+   visible. Ambas opciones quedan atadas a `import.meta.env.PROD`.
+4. **Un 403 en `sign-out` desde curl no es un fallo**: es la protección CSRF. Better Auth exige
+   cabecera `Origin` en las peticiones que cambian estado. Verificado que con origen legítimo
+   responde 200 y con origen ajeno 403.
+
+**Dependencias añadidas:** `better-auth` 1.7.5 · `@better-auth/mongo-adapter` 1.7.5 (hay que
+instalarlo aparte; `better-auth/adapters/mongodb` solo reexporta de él) · `mongodb` 7.6.0 ·
+`@types/node` 24 (sin él, `MongoClientOptions` no resuelve los tipos TLS de Node y el
+typecheck falla).
 
 ---
 

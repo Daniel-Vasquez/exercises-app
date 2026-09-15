@@ -1,0 +1,24 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import AuthForm from '@/components/react/AuthForm.tsx';
+
+// El middleware ya redirige a / cuando hay sesión activa, así que aquí
+// solo hace falta recuperar el destino al que volver tras autenticarse.
+const redirigir = Astro.url.searchParams.get('redirigir') ?? '/';
+---
+
+<Layout titulo="Crear cuenta — CoachApp" conNav={false}>
+  <div class="max-w-sm mx-auto py-8">
+    <a href="/" class="text-sm hover:underline" style="color: var(--texto-suave);">← Volver</a>
+
+    <h1 class="text-2xl font-bold mt-6 mb-1">Crear cuenta</h1>
+    <p class="text-sm mb-6" style="color: var(--texto-suave);">Empieza a entrenar con un plan hecho para ti.</p>
+
+    <AuthForm modo="registro" redirigir={redirigir} client:load />
+
+    <p class="text-sm mt-6 text-center" style="color: var(--texto-suave);">
+      ¿Ya tienes cuenta?{' '}
+      <a href="/login" class="text-acento-600 dark:text-acento-300 font-medium hover:underline">Entrar</a>
+    </p>
+  </div>
+</Layout>

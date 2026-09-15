@@ -12,19 +12,24 @@
     "build": "astro check && astro build",
     "preview": "vercel dev",
     "astro": "astro",
-    "check": "astro check"
+    "check": "astro check",
+    "ensure:indexes": "node --env-file=.env scripts/ensure-indexes.ts"
   },
   "dependencies": {
     "@astrojs/react": "^6.0.5",
     "@astrojs/vercel": "^11.0.10",
+    "@better-auth/mongo-adapter": "^1.7.5",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.3.2",
+    "better-auth": "^1.7.5",
+    "mongodb": "^7.6.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
+    "@types/node": "^24.13.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "typescript": "^5.9.3"
