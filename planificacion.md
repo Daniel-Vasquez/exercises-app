@@ -780,7 +780,17 @@ mantener la sesión entre recargas y cerrar sesión. Las rutas privadas quedan p
    apunte al dominio de producción emite cookies `__Secure-`, que **el navegador rechaza sobre
    `http://localhost`**: el login parece funcionar pero la sesión no persiste, sin error
    visible. Ambas opciones quedan atadas a `import.meta.env.PROD`.
-4. **Un 403 en `sign-out` desde curl no es un fallo**: es la protección CSRF. Better Auth exige
+4. **Los campos de formulario en islas React deben ser NO controlados.** Navegadores y
+   gestores de contraseñas autorrellenan los campos **antes** de que la isla se hidrate. Con
+   inputs controlados (`value` + `onChange`), React encuentra en el DOM un valor donde su
+   render decía `value=""`, aborta la hidratación con **React #418** y reconstruye el árbol en
+   cliente. La solución es no renderizar el atributo `value` en servidor: campos con `name` y
+   lectura con `FormData` al enviar. **Aplica igual al `SetTracker` de la Tanda 5**, que tendrá
+   campos de peso y repeticiones.
+5. **`FormEvent` está deprecado en `@types/react` 19.** Para un submit el tipo correcto es
+   `React.SubmitEvent<HTMLFormElement>`, que además tipa `evento.target` como el formulario y
+   permite construir el `FormData` sin castear.
+6. **Un 403 en `sign-out` desde curl no es un fallo**: es la protección CSRF. Better Auth exige
    cabecera `Origin` en las peticiones que cambian estado. Verificado que con origen legítimo
    responde 200 y con origen ajeno 403.
 

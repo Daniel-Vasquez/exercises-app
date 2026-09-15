@@ -12,36 +12,52 @@ interface Props {
  *
  * Un solo componente para ambos modos: los campos coinciden salvo el nombre,
  * y duplicarlo llevaría a que las validaciones se desincronizasen.
+ *
+ * Los campos son NO CONTROLADOS (sin `value` + `onChange`) y se leen con
+ * FormData al enviar. Es deliberado:
+ *
+ *   - Los navegadores y gestores de contraseñas autorrellenan estos campos
+ *     ANTES de que la isla llegue a hidratarse. Con inputs controlados, React
+ *     encuentra un valor en el DOM donde su render decía `value=""` y aborta
+ *     la hidratación con un error de discrepancia (React #418), reconstruyendo
+ *     el árbol en cliente.
+ *   - Un formulario de acceso no necesita estado por pulsación: solo importa
+ *     el contenido al enviar.
+ *
+ * El atributo `name` de cada campo no es opcional: además de alimentar
+ * FormData, es lo que usan los gestores de contraseñas para reconocerlos.
  */
 export default function AuthForm({ modo, redirigir = '/' }: Props) {
   const esRegistro = modo === 'registro';
 
-  const [nombre, setNombre] = useState('');
-  const [correo, setCorreo] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
-  const alEnviar = async (evento: React.FormEvent<HTMLFormElement>) => {
+  const alEnviar = async (evento: React.SubmitEvent<HTMLFormElement>) => {
     evento.preventDefault();
     setError(null);
 
-    // Se valida en cliente para dar respuesta inmediata, pero el servidor
-    // vuelve a validar: esto es comodidad, no seguridad.
-    if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres.');
+    const datos = new FormData(evento.target);
+    const nombre = String(datos.get('nombre') ?? '').trim();
+    const correo = String(datos.get('correo') ?? '').trim();
+    const password = String(datos.get('password') ?? '');
+
+    // Validación en cliente para dar respuesta inmediata. El servidor vuelve
+    // a validar: esto es comodidad, no seguridad.
+    if (esRegistro && nombre.length < 2) {
+      setError('Escribe tu nombre.');
       return;
     }
-    if (esRegistro && nombre.trim().length < 2) {
-      setError('Escribe tu nombre.');
+    if (password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres.');
       return;
     }
 
     setEnviando(true);
 
     const resultado = esRegistro
-      ? await signUp.email({ name: nombre.trim(), email: correo.trim(), password })
-      : await signIn.email({ email: correo.trim(), password });
+      ? await signUp.email({ name: nombre, email: correo, password })
+      : await signIn.email({ email: correo, password });
 
     if (resultado.error) {
       setError(traducirError(resultado.error.code, resultado.error.message));
@@ -60,9 +76,8 @@ export default function AuthForm({ modo, redirigir = '/' }: Props) {
         <Campo etiqueta="Nombre" id="nombre">
           <input
             id="nombre"
+            name="nombre"
             type="text"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
             autoComplete="name"
             required
             className={CLASES_INPUT}
@@ -74,9 +89,8 @@ export default function AuthForm({ modo, redirigir = '/' }: Props) {
       <Campo etiqueta="Correo" id="correo">
         <input
           id="correo"
+          name="correo"
           type="email"
-          value={correo}
-          onChange={(e) => setCorreo(e.target.value)}
           autoComplete="email"
           inputMode="email"
           required
@@ -88,9 +102,8 @@ export default function AuthForm({ modo, redirigir = '/' }: Props) {
       <Campo etiqueta="Contraseña" id="password">
         <input
           id="password"
+          name="password"
           type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
           autoComplete={esRegistro ? 'new-password' : 'current-password'}
           required
           minLength={8}
