@@ -1,0 +1,41 @@
+---
+import Nav from '@/components/astro/Nav.astro';
+import '@/styles/global.css';
+
+interface Props {
+  titulo: string;
+  descripcion?: string;
+  /** La landing pública se renderiza sin la navegación de la app. */
+  conNav?: boolean;
+}
+
+const {
+  titulo,
+  descripcion = 'Tu entrenador personal: rutinas a medida, registro diario y progreso real.',
+  conNav = true,
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={descripcion} />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{titulo}</title>
+  </head>
+  <body class="min-h-dvh flex flex-col">
+    {conNav && <Nav />}
+    <main class="flex-1 w-full max-w-5xl mx-auto px-4 py-8 sm:px-6 sm:py-12">
+      <slot />
+    </main>
+    <footer
+      class="border-t py-6 text-center text-sm"
+      style="border-color: var(--borde); color: var(--texto-suave);"
+    >
+      Datos de ejercicios: © Gym Visual · Coach App
+    </footer>
+  </body>
+</html>

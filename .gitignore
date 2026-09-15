@@ -1,0 +1,29 @@
+# dependencias
+node_modules/
+
+# build
+dist/
+.astro/
+.output/
+
+# entorno — NUNCA commitear secretos reales
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# artefactos de scripts
+sync-report.json
+
+# sistema operativo
+.DS_Store
+Thumbs.db
+
+# editores
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# logs
+*.log
+npm-debug.log*

@@ -1,0 +1,67 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import PruebaIsla from '@/components/react/PruebaIsla.tsx';
+
+// TANDA 0: página única de verificación del andamiaje.
+// En la Tanda 8 esta ruta pasa a tener dos caras: landing sin sesión y
+// dashboard con sesión (entreno de hoy, racha y accesos rápidos).
+const tandas = [
+  { n: 0, titulo: 'Andamiaje', estado: 'en curso', detalle: 'Astro 7 · React 19 · Tailwind 4 · SSR Node' },
+  { n: 1, titulo: 'MongoDB + Better Auth', estado: 'pendiente', detalle: 'Registro, login y sesiones' },
+  { n: 2, titulo: 'Catálogo + traducción', estado: 'pendiente', detalle: '1.324 ejercicios en español' },
+  { n: 3, titulo: 'Coaches + onboarding', estado: 'pendiente', detalle: '4 arquetipos y cuestionario' },
+  { n: 4, titulo: 'Motor de rutinas', estado: 'pendiente', detalle: 'Generación determinista por reglas' },
+] as const;
+---
+
+<Layout titulo="CoachApp — Tanda 0">
+  <section class="mb-10">
+    <p class="text-sm font-medium text-acento-600 dark:text-acento-300 mb-2">Tanda 0 · Andamiaje</p>
+    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
+      El proyecto está en pie.
+    </h1>
+    <p class="text-lg max-w-2xl" style="color: var(--texto-suave);">
+      Astro en modo servidor, React como islas y Tailwind 4 con el tema definido en CSS.
+      Esta página existe para verificar el andamiaje y desaparece en la Tanda 8.
+    </p>
+  </section>
+
+  <section class="mb-10">
+    <h2 class="text-sm font-semibold uppercase tracking-wide mb-3" style="color: var(--texto-suave);">
+      Isla React interactiva
+    </h2>
+    <PruebaIsla client:load />
+  </section>
+
+  <section>
+    <h2 class="text-sm font-semibold uppercase tracking-wide mb-3" style="color: var(--texto-suave);">
+      Hoja de ruta
+    </h2>
+    <ul class="grid gap-2 sm:grid-cols-2">
+      {
+        tandas.map(({ n, titulo, estado, detalle }) => (
+          <li
+            class="rounded-tarjeta border p-4"
+            style="border-color: var(--borde);"
+          >
+            <div class="flex items-center gap-2 mb-1">
+              <span
+                class="text-xs font-mono px-1.5 py-0.5 rounded"
+                style="background-color: var(--superficie-alt); color: var(--texto-suave);"
+              >
+                T{n}
+              </span>
+              <span class="font-medium">{titulo}</span>
+              {estado === 'en curso' && (
+                <span class="ml-auto text-xs font-medium text-acento-600 dark:text-acento-300">
+                  en curso
+                </span>
+              )}
+            </div>
+            <p class="text-sm" style="color: var(--texto-suave);">{detalle}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</Layout>

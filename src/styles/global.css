@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Tema (ADR-02) — En Tailwind 4 la configuración vive aquí, en CSS.
+   No hay tailwind.config.js. Cada token de @theme genera automáticamente sus
+   utilidades (--color-acento-500 → bg-acento-500, text-acento-500, …).
+   La paleta definitiva se afina en la Tanda 8, cuando definas la marca.
+--------------------------------------------------------------------------- */
+@theme {
+  /* Acento de la app */
+  --color-acento-50:  oklch(0.97 0.02 250);
+  --color-acento-100: oklch(0.93 0.05 250);
+  --color-acento-300: oklch(0.78 0.13 250);
+  --color-acento-500: oklch(0.62 0.19 250);
+  --color-acento-600: oklch(0.55 0.19 250);
+  --color-acento-700: oklch(0.47 0.17 250);
+  --color-acento-900: oklch(0.32 0.11 250);
+
+  /* Estados de sesión — se reutilizan en /calendario (Tanda 6) */
+  --color-exito-500:   oklch(0.68 0.17 155);
+  --color-parcial-500: oklch(0.78 0.16 80);
+  --color-fallo-500:   oklch(0.62 0.20 25);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+               Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --radius-tarjeta: 0.875rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Superficies sensibles al tema. Se definen como variables propias (no @theme)
+   porque cambian de valor según el esquema de color, no son tokens fijos.
+--------------------------------------------------------------------------- */
+:root {
+  --superficie:       oklch(0.99 0.003 250);
+  --superficie-alt:   oklch(0.96 0.006 250);
+  --borde:            oklch(0.90 0.008 250);
+  --texto:            oklch(0.22 0.015 250);
+  --texto-suave:      oklch(0.50 0.015 250);
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --superficie:     oklch(0.19 0.012 250);
+    --superficie-alt: oklch(0.24 0.014 250);
+    --borde:          oklch(0.32 0.014 250);
+    --texto:          oklch(0.96 0.005 250);
+    --texto-suave:    oklch(0.72 0.012 250);
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--superficie);
+    color: var(--texto);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Foco visible y consistente: criterio de accesibilidad de la Tanda 8,
+     pero se establece desde el principio para no tener que retrofitearlo. */
+  :focus-visible {
+    outline: 2px solid var(--color-acento-500);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
