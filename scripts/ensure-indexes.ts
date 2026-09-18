@@ -57,6 +57,33 @@ try {
     .createIndex({ providerId: 1, accountId: 1 }, { name: 'por_proveedor' });
   console.log('  ✅ account.por_proveedor');
 
+  // --- Catálogo de ejercicios (Tanda 2) -----------------------------------
+  await db.collection('exercises').createIndex({ id: 1 }, { unique: true, name: 'id_unico' });
+  console.log('  ✅ exercises.id_unico (único) — lo usa el upsert del sync');
+
+  // Consulta de pool del motor de rutinas: filtra por foco muscular del día
+  // cruzado con el material disponible del usuario.
+  await db
+    .collection('exercises')
+    .createIndex({ body_part: 1, equipment: 1 }, { name: 'por_zona_y_equipo' });
+  console.log('  ✅ exercises.por_zona_y_equipo');
+
+  await db.collection('exercises').createIndex({ target: 1 }, { name: 'por_target' });
+  console.log('  ✅ exercises.por_target');
+
+  await db.collection('exercises').createIndex({ patterns: 1 }, { name: 'por_patron' });
+  console.log('  ✅ exercises.por_patron — exclusiones por lesión');
+
+  // Búsqueda en español. El endpoint /search de la API remota queda
+  // descartado: solo entiende inglés (§3.5).
+  await db
+    .collection('exercises')
+    .createIndex(
+      { name_es: 'text', search_blob: 'text' },
+      { name: 'busqueda_es', default_language: 'spanish', weights: { name_es: 10, search_blob: 1 } },
+    );
+  console.log('  ✅ exercises.busqueda_es (texto, español)');
+
   console.log('\nÍndices al día.');
 } catch (error) {
   console.error('\n❌ Error creando índices:', error instanceof Error ? error.message : error);

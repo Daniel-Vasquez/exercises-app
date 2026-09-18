@@ -801,7 +801,7 @@ typecheck falla).
 
 ---
 
-### 📚 TANDA 2 — Catálogo local + capa de traducción
+### ✅ TANDA 2 — Catálogo local + capa de traducción — **COMPLETADA**
 
 **Objetivo.** Los 1.324 ejercicios viven en nuestra MongoDB, traducidos y consultables en
 español. Implementa ADR-01 y todo el §3.
@@ -826,13 +826,47 @@ español. Implementa ADR-01 y todo el §3.
 - 💻 `npm run ensure:indexes`
 
 **Criterio de aceptación**
-- [ ] `db.exercises.countDocuments()` → **1324**.
-- [ ] Ningún documento tiene `body_part_es`, `target_es` o `equipment_es` vacío (**100% taxonomía**).
-- [ ] ≥ 95% de los documentos tienen `translation.source !== 'passthrough'`.
-- [ ] `sync-report.json` lista los tokens sin traducir pendientes.
-- [ ] Buscar `"press de banca"` en local devuelve resultados relevantes.
-- [ ] Re-ejecutar el sync es **idempotente** (sigue habiendo 1324, no 2648).
-- [ ] `npm run check:taxonomy` pasa en verde.
+- [x] `db.exercises.countDocuments()` → **1324**.
+- [x] **0 documentos** con `body_part_es`, `target_es` o `equipment_es` vacío (100% taxonomía).
+- [x] **100%** de los documentos con `translation.source !== 'passthrough'` (criterio: ≥95%).
+- [x] `sync-report.json` lista los tokens pendientes por frecuencia.
+- [x] Búsqueda en español operativa: «press de banca», «dominadas», «peso muerto»,
+      «elevación de talones» devuelven resultados relevantes.
+- [x] Sync **idempotente**: segunda ejecución → 0 insertados, 1324 actualizados, 1324 en total.
+- [x] `npm run check:taxonomy` en verde, y **verificado con prueba negativa**: al quitar un
+      término del diccionario, falla e imprime la línea exacta que hay que añadir.
+- [x] Consultas de pool del motor usando índice (`explain` → `IXSCAN`).
+
+**Calidad de la traducción de nombres.** El traductor por tokens se construyó en dos
+iteraciones midiendo sobre los 1.324 nombres reales:
+
+| | nombres sin ningún token pendiente |
+| :--- | ---: |
+| Primera versión | 57,8% |
+| + léxico ampliado y concordancia de género | 80,7% |
+| + segundo lote de cola larga | **91,5%** |
+
+El 8,5% restante son 133 términos con 1–2 apariciones cada uno. Ahí la revisión humana del
+JSON generado es más barata y mejor que seguir añadiendo reglas.
+
+**Hallazgos de esta tanda:**
+
+1. **La concordancia de género era imprescindible.** Sin ella salía «Sentadilla inverso» y
+   «Elevación de talones inverso». Cada movimiento declara género y número, y los adjetivos
+   se flexionan contra el núcleo: «Sentadilla inversa» pero «Curl inverso». Las posturas
+   (`sentado`, `de pie`) se dejan invariables a propósito: describen a quien ejecuta, no al
+   ejercicio, y así se usan en el español de gimnasio.
+2. **La API trae datos con mojibake.** Varios nombres contienen `45в°` en vez de `45°`. Se
+   normaliza en la ingesta.
+3. **`male`, `female` y `pov` son metadatos del GIF**, no del ejercicio («barbell full squat
+   (back pov)»). Se descartan al traducir.
+4. **Solo 579 de 1.324 ejercicios reciben algún patrón de movimiento.** Es esperable —
+   estiramientos y aislados no encajan en patrones compuestos— pero significa que la
+   exclusión por lesión de la Tanda 4 **no puede apoyarse solo en `patterns`**: debe combinar
+   patrón y `target`, como ya prevé §6.6.
+5. **`PUBLIC_EXERCISES_API_URL` debe incluir `/api/v1`** y no llevar barra final. El cliente
+   normaliza la barra y, ante un 4xx, devuelve un mensaje que nombra la variable en vez de un
+   error de red genérico.
 
 ---
 
@@ -1088,3 +1122,5 @@ conviene invertir más tiempo de revisión: todo lo que viene después consume s
    estrategia de diccionario (§3) o prefieres otro enfoque?
 
 Dame el visto bueno y arranco con la **Tanda 0**.
+
+claude --resume 328b5b8b-285b-49e4-938e-dd030580c276

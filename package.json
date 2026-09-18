@@ -13,7 +13,10 @@
     "preview": "vercel dev",
     "astro": "astro",
     "check": "astro check",
-    "ensure:indexes": "node --env-file=.env scripts/ensure-indexes.ts"
+    "ensure:indexes": "node --env-file=.env scripts/ensure-indexes.ts",
+    "build:names": "node --env-file=.env scripts/build-name-dictionary.ts",
+    "sync:exercises": "node --env-file=.env scripts/sync-exercises.ts",
+    "check:taxonomy": "node --env-file=.env scripts/check-taxonomy.ts"
   },
   "dependencies": {
     "@astrojs/react": "^6.0.5",

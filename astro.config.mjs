@@ -36,6 +36,14 @@ export default defineConfig({
       BETTER_AUTH_SECRET: envField.string({ context: 'server', access: 'secret', min: 32 }),
       // `url: true` rechaza un valor entrecomillado, que no parsea como URL.
       BETTER_AUTH_URL: envField.string({ context: 'server', access: 'secret', url: true }),
+      // Catálogo de ejercicios. Público y sin clave: solo lo usan los scripts
+      // de sincronización, nunca una petición de usuario (ADR-01).
+      PUBLIC_EXERCISES_API_URL: envField.string({
+        context: 'server',
+        access: 'public',
+        url: true,
+        default: 'https://exercises-dataset-rho.vercel.app/api/v1',
+      }),
     },
   },
 
