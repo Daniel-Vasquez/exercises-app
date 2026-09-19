@@ -870,7 +870,7 @@ JSON generado es más barata y mejor que seguir añadiendo reglas.
 
 ---
 
-### 🧭 TANDA 3 — Coaches + onboarding
+### ✅ TANDA 3 — Coaches + onboarding — **COMPLETADA**
 
 **Objetivo.** El usuario elige uno de los 4 coaches, responde el cuestionario adaptado a ese
 coach y su perfil queda guardado. Sin generar rutina todavía.
@@ -889,12 +889,34 @@ coach y su perfil queda guardado. Sin generar rutina todavía.
 - Ninguna variable de entorno nueva.
 
 **Criterio de aceptación**
-- [ ] Las 4 tarjetas de coach se muestran y una queda seleccionable.
-- [ ] Elegir "Hipertrofia" muestra sus preguntas extra; elegir "Fuerza" muestra otras distintas.
-- [ ] El cuestionario valida en cliente **y** en servidor (Zod); no se puede enviar incompleto.
-- [ ] Al enviar se crea/actualiza `profiles` con `userId` correcto.
-- [ ] Un usuario que ya completó el onboarding es redirigido a `/` en vez de repetirlo.
-- [ ] Multi-usuario: dos cuentas distintas tienen perfiles independientes.
+- [x] Las 4 tarjetas de coach se muestran como `radiogroup` accesible y seleccionable.
+- [x] Las preguntas extra dependen del coach: Hipertrofia pregunta grupo prioritario y
+      tolerancia al fallo; Salud pregunta horas sentado, dolor 0–10 y objetivo funcional.
+- [x] Validación en cliente **y** en servidor con Zod. Rechazado con 400: coach inexistente,
+      días fuera de rango, minutos no permitidos, zona de lesión inventada, extras obligatorios
+      ausentes, **extras pertenecientes a otro coach** y escala fuera de rango.
+- [x] `profiles` se crea con `userId` como **ObjectId**, y se verificó que cruza con `user`.
+- [x] Completado el onboarding, `/onboarding` redirige a `/`; con `?editar=1` permite ajustarlo
+      con las respuestas precargadas.
+- [x] Multi-usuario: dos cuentas con coaches y extras independientes; rehacer el onboarding
+      actualiza el perfil en vez de duplicarlo (2 documentos para 2 usuarios).
+- [x] `POST /api/onboarding` anónimo → 401.
+
+**Decisiones de esta tanda:**
+
+1. **`userId` como `ObjectId`**, aplicando el hallazgo de la Tanda 1. Verificado explícitamente
+   que cada perfil cruza con su documento en `user`: de haberlo guardado como string, el filtro
+   habría devuelto cero resultados sin lanzar ningún error.
+2. **Las preguntas extra se validan contra el coach elegido**, no con un esquema estático. Sin
+   eso, alguien podría enviar el cuestionario de Fuerza habiendo elegido Salud y el motor
+   recibiría respuestas que no sabe interpretar. También se rechazan claves que el coach no
+   pidió, para no guardar basura en el perfil.
+3. **`userId` sale siempre de la sesión, nunca del cuerpo** de la petición (riesgo R6).
+4. **El onboarding es re-editable a propósito.** El criterio original solo pedía no repetirlo;
+   redirigir sin más impediría cambiar de coach o de disponibilidad, que es algo que cambia con
+   el tiempo. `?editar=1` resuelve ambas cosas.
+5. **Se eliminó `PruebaIsla.tsx`**, el smoke test de la Tanda 0: la portada ya tiene contenido
+   real y el componente quedaba como código muerto. Estaba previsto retirarlo en la Tanda 5.
 
 ---
 

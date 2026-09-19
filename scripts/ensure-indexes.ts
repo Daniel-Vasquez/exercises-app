@@ -84,6 +84,12 @@ try {
     );
   console.log('  ✅ exercises.busqueda_es (texto, español)');
 
+  // --- Perfiles (Tanda 3) --------------------------------------------------
+  // Único: un solo perfil por usuario. Rehacer el onboarding actualiza,
+  // no duplica, y la base de datos lo garantiza aunque la app fallara.
+  await db.collection('profiles').createIndex({ userId: 1 }, { unique: true, name: 'usuario_unico' });
+  console.log('  ✅ profiles.usuario_unico (único)');
+
   console.log('\nÍndices al día.');
 } catch (error) {
   console.error('\n❌ Error creando índices:', error instanceof Error ? error.message : error);

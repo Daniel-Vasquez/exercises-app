@@ -1,38 +1,39 @@
 ---
 import Layout from '@/layouts/Layout.astro';
-import PruebaIsla from '@/components/react/PruebaIsla.tsx';
+import { obtenerPerfil } from '@/lib/profiles/repository';
+import { obtenerCoach } from '@/lib/coaches';
+import { BODY_PARTS_ES } from '@/lib/i18n/body-parts.es';
 
+// Tres estados: anónimo (landing), con sesión sin perfil (empuja al
+// onboarding) y con perfil (resumen del plan). El dashboard completo, con
+// el entreno de hoy y la racha, llega en la Tanda 8.
 const usuario = Astro.locals.user;
+const perfil = usuario ? await obtenerPerfil(usuario.id) : null;
+const coach = perfil ? obtenerCoach(perfil.coachId) : null;
 
-// TANDA 0: página única de verificación del andamiaje.
-// En la Tanda 8 esta ruta pasa a tener dos caras: landing sin sesión y
-// dashboard con sesión (entreno de hoy, racha y accesos rápidos).
-const tandas = [
-  { n: 0, titulo: 'Andamiaje', estado: 'hecho', detalle: 'Astro 7 · React 19 · Tailwind 4 · SSR Vercel' },
-  { n: 1, titulo: 'MongoDB + Better Auth', estado: 'en curso', detalle: 'Registro, login y sesiones' },
-  { n: 2, titulo: 'Catálogo + traducción', estado: 'pendiente', detalle: '1.324 ejercicios en español' },
-  { n: 3, titulo: 'Coaches + onboarding', estado: 'pendiente', detalle: '4 arquetipos y cuestionario' },
-  { n: 4, titulo: 'Motor de rutinas', estado: 'pendiente', detalle: 'Generación determinista por reglas' },
-] as const;
+const split = coach && perfil ? coach.splitMatrix[perfil.questionnaire.diasPorSemana] : null;
+
+const MATERIAL_ES: Record<string, string> = {
+  casa_sin_equipo: 'En casa, sin equipo',
+  casa_mancuernas: 'En casa, con mancuernas',
+  gimnasio_basico: 'Gimnasio básico',
+  gimnasio_completo: 'Gimnasio completo',
+};
 ---
 
-<Layout titulo="CoachApp — Tanda 0">
-  <section class="mb-10">
-    <p class="text-sm font-medium text-acento-600 dark:text-acento-300 mb-2">Tanda 1 · Autenticación</p>
-    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
-      {usuario ? `Hola, ${usuario.name}.` : 'El proyecto está en pie.'}
-    </h1>
-    <p class="text-lg max-w-2xl" style="color: var(--texto-suave);">
-      {
-        usuario
-          ? 'Tu sesión está activa. El cuestionario y la selección de coach llegan en la Tanda 3.'
-          : 'Astro en modo servidor, React como islas y Tailwind 4 con el tema en CSS. Crea una cuenta para probar la sesión.'
-      }
-    </p>
-
-    {
-      !usuario && (
-        <div class="flex flex-wrap gap-3 mt-6">
+<Layout titulo="CoachApp — Tu entrenador personal">
+  {
+    !usuario && (
+      <section class="py-8">
+        <h1 class="text-3xl sm:text-4xl font-bold tracking-tight mb-3 max-w-2xl">
+          Una rutina hecha para ti, no para todos.
+        </h1>
+        <p class="text-lg max-w-2xl mb-6" style="color: var(--texto-suave);">
+          Elige entre cuatro entrenadores con filosofías distintas, responde unas preguntas y
+          recibe un plan construido sobre un catálogo de más de 1.300 ejercicios. Registra tus
+          series y mira cómo progresas.
+        </p>
+        <div class="flex flex-wrap gap-3">
           <a
             href="/registro"
             class="min-h-11 inline-flex items-center px-5 rounded-xl bg-acento-500 text-white font-medium hover:bg-acento-600 transition-colors"
@@ -47,46 +48,115 @@ const tandas = [
             Entrar
           </a>
         </div>
-      )
-    }
-  </section>
+      </section>
+    )
+  }
 
-  <section class="mb-10">
-    <h2 class="text-sm font-semibold uppercase tracking-wide mb-3" style="color: var(--texto-suave);">
-      Isla React interactiva
-    </h2>
-    <PruebaIsla client:load />
-  </section>
+  {
+    usuario && !perfil && (
+      <section class="py-8">
+        <h1 class="text-3xl font-bold tracking-tight mb-3">Hola, {usuario.name}.</h1>
+        <p class="text-lg max-w-xl mb-6" style="color: var(--texto-suave);">
+          Todavía no tienes un plan. Elige entrenador y responde unas preguntas: son dos minutos.
+        </p>
+        <a
+          href="/onboarding"
+          class="min-h-11 inline-flex items-center px-5 rounded-xl bg-acento-500 text-white font-medium hover:bg-acento-600 transition-colors"
+        >
+          Configurar mi plan
+        </a>
+      </section>
+    )
+  }
 
-  <section>
-    <h2 class="text-sm font-semibold uppercase tracking-wide mb-3" style="color: var(--texto-suave);">
-      Hoja de ruta
-    </h2>
-    <ul class="grid gap-2 sm:grid-cols-2">
-      {
-        tandas.map(({ n, titulo, estado, detalle }) => (
-          <li
-            class="rounded-tarjeta border p-4"
+  {
+    usuario && perfil && coach && (
+      <section class="py-4">
+        <h1 class="text-3xl font-bold tracking-tight mb-6">Hola, {usuario.name}.</h1>
+
+        <article class="rounded-tarjeta border p-5 mb-6" style="border-color: var(--borde); background-color: var(--superficie-alt);">
+          <div class="flex items-start gap-3">
+            <span class="text-3xl leading-none" aria-hidden="true">{coach.emoji}</span>
+            <div>
+              <p class="font-semibold">
+                {coach.nombre} <span style="color: var(--texto-suave);">«{coach.titulo}»</span>
+              </p>
+              <p class="text-sm italic mt-1" style="color: var(--texto-suave);">{coach.filosofia}</p>
+            </div>
+          </div>
+
+          <dl class="grid sm:grid-cols-2 gap-x-6 gap-y-2 mt-5 text-sm">
+            <div class="flex justify-between gap-3 border-b pb-1" style="border-color: var(--borde);">
+              <dt style="color: var(--texto-suave);">Frecuencia</dt>
+              <dd class="tabular-nums">{perfil.questionnaire.diasPorSemana} días/semana</dd>
+            </div>
+            <div class="flex justify-between gap-3 border-b pb-1" style="border-color: var(--borde);">
+              <dt style="color: var(--texto-suave);">Por sesión</dt>
+              <dd class="tabular-nums">{perfil.questionnaire.minutosPorSesion} min</dd>
+            </div>
+            <div class="flex justify-between gap-3 border-b pb-1" style="border-color: var(--borde);">
+              <dt style="color: var(--texto-suave);">Material</dt>
+              <dd>{MATERIAL_ES[perfil.questionnaire.material]}</dd>
+            </div>
+            <div class="flex justify-between gap-3 border-b pb-1" style="border-color: var(--borde);">
+              <dt style="color: var(--texto-suave);">Reparto</dt>
+              <dd>{split?.nombre ?? '—'}</dd>
+            </div>
+          </dl>
+
+          {
+            perfil.questionnaire.zonasAEvitar.length > 0 && (
+              <p class="text-sm mt-4" style="color: var(--texto-suave);">
+                Evitando: {perfil.questionnaire.zonasAEvitar.join(', ')}.
+              </p>
+            )
+          }
+
+          <p class="text-sm mt-4 pt-4 border-t" style="border-color: var(--borde); color: var(--texto-suave);">
+            <strong style="color: var(--texto);">Progresión:</strong> {coach.progresionTexto}
+          </p>
+        </article>
+
+        {
+          split && (
+            <section class="mb-6">
+              <h2 class="text-sm font-semibold uppercase tracking-wide mb-3" style="color: var(--texto-suave);">
+                Tu semana
+              </h2>
+              <ul class="grid gap-2 sm:grid-cols-2">
+                {split.dias.map((dia) => (
+                  <li class="rounded-tarjeta border p-4" style="border-color: var(--borde);">
+                    <p class="font-medium text-sm">{dia.etiqueta}</p>
+                    <p class="text-xs mt-1" style="color: var(--texto-suave);">
+                      {dia.foco.map((f) => BODY_PARTS_ES[f]).join(' · ')}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
+
+        <div class="flex flex-wrap gap-3">
+          <a
+            href="/rutina"
+            class="min-h-11 inline-flex items-center px-5 rounded-xl bg-acento-500 text-white font-medium hover:bg-acento-600 transition-colors"
+          >
+            Ver mi rutina
+          </a>
+          <a
+            href="/onboarding?editar=1"
+            class="min-h-11 inline-flex items-center px-5 rounded-xl border font-medium transition-colors hover:border-acento-300"
             style="border-color: var(--borde);"
           >
-            <div class="flex items-center gap-2 mb-1">
-              <span
-                class="text-xs font-mono px-1.5 py-0.5 rounded"
-                style="background-color: var(--superficie-alt); color: var(--texto-suave);"
-              >
-                T{n}
-              </span>
-              <span class="font-medium">{titulo}</span>
-              {estado === 'en curso' && (
-                <span class="ml-auto text-xs font-medium text-acento-600 dark:text-acento-300">
-                  en curso
-                </span>
-              )}
-            </div>
-            <p class="text-sm" style="color: var(--texto-suave);">{detalle}</p>
-          </li>
-        ))
-      }
-    </ul>
-  </section>
+            Ajustar plan
+          </a>
+        </div>
+
+        <p class="text-sm mt-6" style="color: var(--texto-suave);">
+          La rutina con ejercicios concretos se genera en la Tanda 4.
+        </p>
+      </section>
+    )
+  }
 </Layout>

@@ -1,0 +1,52 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import Questionnaire from '@/components/react/Questionnaire.tsx';
+import { COACHES_LISTA } from '@/lib/coaches';
+import { obtenerPerfil } from '@/lib/profiles/repository';
+
+// El middleware ya garantiza que hay sesión en esta ruta.
+const usuario = Astro.locals.user!;
+
+const perfil = await obtenerPerfil(usuario.id);
+
+// Quien ya completó el onboarding no debe repetirlo por accidente: se le
+// devuelve al inicio. Pero sí puede volver a propósito con ?editar=1, y
+// entonces se precargan sus respuestas en lugar de empezar de cero.
+const quiereEditar = Astro.url.searchParams.has('editar');
+if (perfil && !quiereEditar) {
+  return Astro.redirect('/');
+}
+const inicial = perfil
+  ? {
+      coachId: perfil.coachId,
+      respuestas: {
+        ...perfil.questionnaire,
+        ...perfil.questionnaire.extras,
+        diasPorSemana: String(perfil.questionnaire.diasPorSemana),
+        minutosPorSesion: String(perfil.questionnaire.minutosPorSesion),
+      },
+    }
+  : null;
+---
+
+<Layout titulo="Configura tu plan — CoachApp">
+  <div class="max-w-2xl mx-auto">
+    <header class="mb-8">
+      <p class="text-sm font-medium text-acento-600 dark:text-acento-300 mb-2">
+        {perfil ? 'Ajustar plan' : 'Empecemos'}
+      </p>
+      <h1 class="text-3xl font-bold tracking-tight mb-2">
+        {perfil ? 'Cambia lo que necesites' : `Hola, ${usuario.name}`}
+      </h1>
+      <p style="color: var(--texto-suave);">
+        {
+          perfil
+            ? 'Al guardar, tu rutina se regenerará con los nuevos datos.'
+            : 'Elige un entrenador y responde unas preguntas. Con eso construiré tu rutina.'
+        }
+      </p>
+    </header>
+
+    <Questionnaire coaches={COACHES_LISTA} inicial={inicial} client:load />
+  </div>
+</Layout>
