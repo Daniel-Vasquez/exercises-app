@@ -1,22 +1,85 @@
 ---
 import Layout from '@/layouts/Layout.astro';
+import DiaEntreno from '@/components/react/DiaEntreno.tsx';
 import { obtenerRutinaActiva } from '@/lib/routines/repository';
 import { obtenerVarios } from '@/lib/exercises/repository';
 import { obtenerCoach } from '@/lib/coaches';
-import { BODY_PARTS_ES } from '@/lib/i18n/body-parts.es';
+import { obtenerRegistro, registrosEntreFechas, ultimosValores } from '@/lib/logs/repository';
+import { fechaLocal } from '@/lib/progress/metrics';
 
-// Vista de SOLO LECTURA. El registro interactivo de series (SetTracker)
-// llega en la Tanda 5; esta pantalla existe para poder ver y revisar la
-// rutina que genera el motor.
 const usuario = Astro.locals.user!;
 const rutina = await obtenerRutinaActiva(usuario.id);
 const coach = rutina ? obtenerCoach(rutina.coachId) : null;
 
-const ids = rutina ? [...new Set(rutina.dias.flatMap((d) => d.bloques.map((b) => b.exerciseId)))] : [];
-const ejercicios = await obtenerVarios(ids);
+// La fecha la propone el cliente (es local), pero el servidor necesita una
+// para la primera pintada. Se usa la del servidor como punto de partida y
+// una isla la corrige si la zona horaria del usuario difiere.
+const hoy = Astro.url.searchParams.get('fecha') ?? fechaLocal();
+
+/**
+ * Día sugerido: el siguiente de la rotación.
+ * Si ya hay registro de hoy se abre ese; si no, se avanza desde el último
+ * día entrenado. Así la app no obliga a elegir cada vez, pero tampoco
+ * impone: las pestañas permiten cambiar.
+ */
+let diaSugerido = 0;
+if (rutina) {
+  const pedido = Number(Astro.url.searchParams.get('dia') ?? NaN);
+  if (Number.isInteger(pedido) && pedido >= 0 && pedido < rutina.dias.length) {
+    diaSugerido = pedido;
+  } else {
+    const recientes = await registrosEntreFechas(usuario.id, restarDias(hoy, 14), hoy);
+    const deHoy = recientes.find((r) => r.date === hoy);
+    if (deHoy) {
+      diaSugerido = deHoy.dayIndex;
+    } else if (recientes.length) {
+      diaSugerido = (recientes[0]!.dayIndex + 1) % rutina.dias.length;
+    }
+  }
+}
+
+const dia = rutina?.dias[diaSugerido] ?? null;
+
+const ids = dia ? dia.bloques.map((b) => b.exerciseId) : [];
+const ejercicios = await obtenerVarios([...new Set(ids)]);
 const porId = new Map(ejercicios.map((e) => [e.id, e]));
 
-const formatoDescanso = (s: number) => (s >= 60 ? `${Math.round(s / 60)} min` : `${s} s`);
+const registro = dia ? await obtenerRegistro(usuario.id, hoy, diaSugerido) : null;
+const sugerencias = dia ? await ultimosValores(usuario.id, ids) : {};
+
+const bloques = (dia?.bloques ?? []).map((b) => {
+  const e = porId.get(b.exerciseId);
+  return {
+    exerciseId: b.exerciseId,
+    orden: b.orden,
+    slotEtiqueta: b.slotEtiqueta,
+    sets: b.sets,
+    medida: b.medida ?? 'reps',
+    repsMin: b.repsMin,
+    repsMax: b.repsMax,
+    segundos: b.segundos,
+    restSeconds: b.restSeconds,
+    nombre: e?.name_es ?? b.exerciseId,
+    musculo: e?.target_es ?? '',
+    equipo: e?.equipment_es ?? '',
+    imagenUrl: e?.media?.image_url ?? '',
+    gifUrl: e?.media?.gif_url ?? '',
+    instrucciones: e?.instruction_steps ?? [],
+  };
+});
+
+function restarDias(fecha: string, dias: number): string {
+  const [y, m, d] = fecha.split('-').map(Number) as [number, number, number];
+  const base = new Date(y, m - 1, d);
+  base.setDate(base.getDate() - dias);
+  return fechaLocal(base);
+}
+
+const fechaLegible = new Intl.DateTimeFormat('es', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+}).format(new Date(`${hoy}T12:00:00`));
 ---
 
 <Layout titulo="Tu rutina — CoachApp">
@@ -38,89 +101,54 @@ const formatoDescanso = (s: number) => (s >= 60 ? `${Math.round(s / 60)} min` : 
   }
 
   {
-    rutina && (
+    rutina && dia && (
       <>
-        <header class="mb-6">
+        <header class="mb-4">
           <p class="text-sm font-medium text-acento-600 dark:text-acento-300 mb-1">
             {coach?.emoji} {coach?.nombre} · {rutina.splitNombre}
           </p>
-          <h1 class="text-3xl font-bold tracking-tight">Tu rutina</h1>
-          <p class="text-sm mt-2" style="color: var(--texto-suave);">
-            {rutina.dias.length} días · versión {rutina.version}
+          <h1 class="text-2xl font-bold tracking-tight">{dia.etiqueta}</h1>
+          <p class="text-sm mt-1 first-letter:uppercase" style="color: var(--texto-suave);">
+            {fechaLegible}
           </p>
         </header>
 
+        <nav class="flex gap-2 overflow-x-auto pb-2 mb-4" aria-label="Días de la rutina">
+          {rutina.dias.map((_dia, i) => (
+            <a
+              href={`/rutina?dia=${i}`}
+              aria-current={i === diaSugerido ? 'page' : undefined}
+              class:list={[
+                'shrink-0 min-h-11 inline-flex items-center px-4 rounded-xl border text-sm font-medium transition-colors',
+                i === diaSugerido ? 'bg-acento-500 border-acento-500 text-white' : 'hover:border-acento-300',
+              ]}
+              style={i === diaSugerido ? '' : 'border-color: var(--borde); color: var(--texto-suave);'}
+            >
+              Día {i + 1}
+            </a>
+          ))}
+        </nav>
+
         {
-          rutina.avisos.length > 0 && (
-            <ul class="mb-6 grid gap-2">
-              {rutina.avisos.map((aviso) => (
-                <li
-                  class="text-sm rounded-lg px-3 py-2 border"
-                  style="border-color: var(--borde); background-color: var(--superficie-alt); color: var(--texto-suave);"
-                >
-                  {aviso}
-                </li>
-              ))}
-            </ul>
+          dia.aviso && (
+            <p
+              class="text-sm rounded-lg px-3 py-2 border mb-4"
+              style="border-color: var(--borde); background-color: var(--superficie-alt); color: var(--texto-suave);"
+            >
+              {dia.aviso}
+            </p>
           )
         }
 
-        <div class="grid gap-6">
-          {
-            rutina.dias.map((dia) => (
-              <section class="rounded-tarjeta border overflow-hidden" style="border-color: var(--borde);">
-                <header class="px-4 py-3 border-b" style="border-color: var(--borde); background-color: var(--superficie-alt);">
-                  <h2 class="font-semibold">{dia.etiqueta}</h2>
-                  <p class="text-xs mt-0.5" style="color: var(--texto-suave);">
-                    {dia.foco.map((f) => BODY_PARTS_ES[f as keyof typeof BODY_PARTS_ES] ?? f).join(' · ')}
-                  </p>
-                </header>
-
-                {dia.aviso && (
-                  <p class="px-4 py-2 text-sm border-b" style="border-color: var(--borde); color: var(--texto-suave);">
-                    {dia.aviso}
-                  </p>
-                )}
-
-                <ol>
-                  {dia.bloques.map((bloque) => {
-                    const ejercicio = porId.get(bloque.exerciseId);
-                    return (
-                      <li class="flex gap-3 px-4 py-3 border-b last:border-b-0" style="border-color: var(--borde);">
-                        {ejercicio?.media?.image_url && (
-                          <img
-                            src={ejercicio.media.image_url}
-                            alt=""
-                            width="56"
-                            height="56"
-                            loading="lazy"
-                            class="w-14 h-14 rounded-lg object-cover shrink-0"
-                            style="background-color: var(--superficie-alt);"
-                          />
-                        )}
-                        <div class="min-w-0 flex-1">
-                          <p class="text-xs" style="color: var(--texto-suave);">{bloque.slotEtiqueta}</p>
-                          <p class="font-medium text-sm">{ejercicio?.name_es ?? bloque.exerciseId}</p>
-                          <p class="text-sm mt-1 tabular-nums" style="color: var(--texto-suave);">
-                            {bloque.medida === 'tiempo'
-                              ? `${bloque.sets} × ${bloque.segundos} s`
-                              : `${bloque.sets} × ${bloque.repsMin}-${bloque.repsMax} reps`}
-                            {' · descanso '}
-                            {formatoDescanso(bloque.restSeconds)}
-                          </p>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ol>
-              </section>
-            ))
-          }
-        </div>
-
-        <p class="text-sm mt-6" style="color: var(--texto-suave);">
-          El registro de series, repeticiones y peso llega en la Tanda 5.
-        </p>
+        <DiaEntreno
+          date={hoy}
+          dayIndex={diaSugerido}
+          routineId={rutina._id ? String(rutina._id) : null}
+          bloques={bloques}
+          entradasIniciales={registro?.entries ?? []}
+          sugerencias={sugerencias}
+          client:load
+        />
       </>
     )
   }

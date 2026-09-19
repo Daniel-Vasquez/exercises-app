@@ -97,6 +97,23 @@ try {
   await db.collection('routines').createIndex({ userId: 1, version: -1 }, { name: 'por_version' });
   console.log('  ✅ routines.por_version');
 
+  // --- Registros de entrenamiento (Tanda 5) --------------------------------
+  // Único: garantiza la idempotencia del PUT a nivel de base de datos, no
+  // solo en la lógica de la aplicación.
+  await db
+    .collection('workout_logs')
+    .createIndex({ userId: 1, date: 1, dayIndex: 1 }, { unique: true, name: 'usuario_fecha_dia' });
+  console.log('  ✅ workout_logs.usuario_fecha_dia (único) — idempotencia del PUT');
+
+  // Lo usan el calendario y la pantalla de progreso para leer rangos.
+  await db.collection('workout_logs').createIndex({ userId: 1, date: -1 }, { name: 'por_fecha' });
+  console.log('  ✅ workout_logs.por_fecha');
+
+  await db
+    .collection('workout_logs')
+    .createIndex({ userId: 1, 'entries.exerciseId': 1 }, { name: 'por_ejercicio' });
+  console.log('  ✅ workout_logs.por_ejercicio — autorrelleno de la última sesión');
+
   console.log('\nÍndices al día.');
 } catch (error) {
   console.error('\n❌ Error creando índices:', error instanceof Error ? error.message : error);

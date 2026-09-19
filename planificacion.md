@@ -974,7 +974,7 @@ mejora, no como defecto de diseño del motor.
 
 ---
 
-### 🏃 TANDA 5 — `/rutina` + registro interactivo de series
+### ✅ TANDA 5 — `/rutina` + registro interactivo de series — **COMPLETADA**
 
 **Objetivo.** La pantalla de uso diario: ver la rutina por días y registrar series, repeticiones
 y peso mientras se entrena.
@@ -1000,14 +1000,40 @@ y peso mientras se entrena.
 - 🖐️ Probarlo **en el móvil** (es donde se usará de verdad, con las manos ocupadas).
 
 **Criterio de aceptación**
-- [ ] `/rutina` muestra la rutina activa dividida por días, resaltando el de hoy.
-- [ ] Marcar una serie la persiste; al recargar sigue marcada.
-- [ ] Editar reps/peso guarda sin romper (debounce verificado en la pestaña de red).
-- [ ] Completar todas las series marca el día como `completed` con `completedAt`.
-- [ ] `totals.volumeKg` se calcula correctamente (`Σ reps × peso` de las series hechas).
-- [ ] Reenviar el mismo PUT **no duplica** el registro (índice único).
-- [ ] Usable con una sola mano en pantalla de 375 px.
-- [ ] El GIF solo se descarga al pulsar/hover sobre la tarjeta, nunca en la carga inicial.
+- [x] `/rutina` muestra la rutina por días con pestañas, y abre el día sugerido de la rotación.
+- [x] Marcar una serie la persiste; el `GET` posterior devuelve `[true, true, false]`.
+- [x] Editar reps/peso guarda con rebote de 800 ms y estado visible.
+- [x] Completar todas las series → `status: "completed"` con `completedAt`.
+- [x] `totals.volumeKg` correcto: 2×10×60 = **1200 kg**, y al completar 1200+8×62,5 = **1700 kg**.
+- [x] **Idempotencia verificada en dos capas**: 5 PUT idénticos dejan **1 documento**, y una
+      inserción directa duplicada la rechaza la propia base de datos con `E11000`.
+- [x] El GIF **no se descarga en la carga inicial**: la isla sirve 6 miniaturas `.jpg` y cero
+      `.gif`; la URL del GIF viaja en props y solo se pide al pulsar.
+- [x] Validación: fecha imposible, formato libre, peso 9999 kg, 500 repeticiones, peso negativo
+      y `dayIndex` fuera de rango → **400**. PUT anónimo → **401**.
+- [ ] **Pendiente de tu comprobación:** uso real a una mano en 375 px. El marcado está puesto
+      (78 objetivos de 44 px, `inputMode` numérico, `aria-label` por serie), pero la ergonomía
+      de verdad solo se juzga con el móvil en la mano.
+
+**Decisiones de esta tanda:**
+
+1. **Campos no controlados, por el tecleo antes que por la hidratación.** Un input controlado
+   que parsea en cada pulsación convierte `"2."` en `2` y borra el punto mientras se escribe
+   `"2.5"`. Los valores viven en el DOM y en un `ref`; solo el estado de «serie hecha» es
+   estado de React, porque cambia por toque y el botón debe repintarse.
+2. **Guardado optimista con rebote de 800 ms.** Escribir un peso no puede disparar una
+   petición por tecla.
+3. **El borrador se escribe en `localStorage` ANTES de intentar la red** (riesgo R9). En un
+   gimnasio de sótano no hay cobertura, y perder una sesión registrada es la forma más rápida
+   de que alguien abandone la app. Al recuperar conexión se reintenta solo.
+4. **El borrador se recupera en un efecto, no durante el render.** Leer `localStorage` en el
+   inicializador de `useState` se ejecutaría también en el servidor y provocaría exactamente
+   la discrepancia de hidratación de la Tanda 1.
+5. **El cronómetro de descanso usa marcas de tiempo absolutas**, no un contador que resta un
+   segundo por intervalo: el móvil ralentiza los timers al apagar la pantalla, que es justo
+   cuando el usuario está descansando.
+6. **Autorrelleno con la última sesión** del mismo ejercicio, como marca de agua en el campo y
+   como valor al marcar la serie. Es lo que más tiempo ahorra con las manos ocupadas.
 
 ---
 
