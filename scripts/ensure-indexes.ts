@@ -90,6 +90,13 @@ try {
   await db.collection('profiles').createIndex({ userId: 1 }, { unique: true, name: 'usuario_unico' });
   console.log('  ✅ profiles.usuario_unico (único)');
 
+  // --- Rutinas (Tanda 4) ---------------------------------------------------
+  await db.collection('routines').createIndex({ userId: 1, status: 1 }, { name: 'por_usuario_estado' });
+  console.log('  ✅ routines.por_usuario_estado — busca la rutina activa');
+
+  await db.collection('routines').createIndex({ userId: 1, version: -1 }, { name: 'por_version' });
+  console.log('  ✅ routines.por_version');
+
   console.log('\nÍndices al día.');
 } catch (error) {
   console.error('\n❌ Error creando índices:', error instanceof Error ? error.message : error);

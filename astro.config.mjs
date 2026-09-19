@@ -38,6 +38,19 @@ export default defineConfig({
       BETTER_AUTH_URL: envField.string({ context: 'server', access: 'secret', url: true }),
       // Catálogo de ejercicios. Público y sin clave: solo lo usan los scripts
       // de sincronización, nunca una petición de usuario (ADR-01).
+      // Sal de la semilla del motor (§6.4). Tiene valor por defecto para que
+      // el proyecto arranque, pero conviene fijar una propia: cambiarla altera
+      // todas las rutinas que se generen a partir de ese momento.
+      ROUTINE_SEED_SALT: envField.string({
+        context: 'server',
+        access: 'secret',
+        default: 'coachapp-semilla-por-defecto',
+      }),
+      ROUTINE_ENGINE_VERSION: envField.number({
+        context: 'server',
+        access: 'public',
+        default: 1,
+      }),
       PUBLIC_EXERCISES_API_URL: envField.string({
         context: 'server',
         access: 'public',

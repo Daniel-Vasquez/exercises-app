@@ -30,6 +30,8 @@ export const PATRONES = [
   'rotation',
   'isometric',
   'cardio_impact',
+  'stretch',
+  'behind_neck',
 ] as const;
 
 export type Patron = (typeof PATRONES)[number];
@@ -66,6 +68,12 @@ const REGLAS: Regla[] = [
   { patron: 'rotation', nombre: /\b(twist|rotation|rotational|russian|windmill|wood ?chop)\b/ },
   { patron: 'isometric', nombre: /\b(plank|hold|isometric|wall sit|hang)\b/ },
   { patron: 'cardio_impact', nombre: /\b(run|sprint|jump rope|jumping jack|mountain climber)\b/ },
+  // Los estiramientos no son ejercicios de fuerza: marcarlos evita que
+  // acaben rellenando una ranura de accesorio con 3×12 repeticiones.
+  { patron: 'stretch', nombre: /\b(stretch|mobility|foam roll)\b/ },
+  // Tras nuca carga el hombro en rotación externa extrema. Se marca para
+  // poder excluirlo con la lesión de hombro y en el coach de salud.
+  { patron: 'behind_neck', nombre: /\bbehind (?:the )?(?:neck|head)\b/ },
 ];
 
 export interface EntradaPatron {
@@ -96,7 +104,7 @@ export function derivarPatrones(ejercicio: EntradaPatron): Patron[] {
  * Lo consume el motor en la Tanda 4 (§6.6 de planificacion.md).
  */
 export const EXCLUSIONES_POR_ZONA = {
-  hombro: { targets: ['delts'], patrones: ['overhead_press', 'wide_grip_push', 'dip'] },
+  hombro: { targets: ['delts'], patrones: ['overhead_press', 'wide_grip_push', 'dip', 'behind_neck'] },
   rodilla: { targets: [], patrones: ['deep_squat', 'jump', 'lunge'] },
   lumbar: { targets: ['spine'], patrones: ['hip_hinge_loaded', 'bent_over_row'] },
   codo: { targets: [], patrones: ['skullcrusher', 'dip', 'straight_bar_curl'] },

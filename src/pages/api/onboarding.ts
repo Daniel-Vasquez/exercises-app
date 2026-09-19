@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { esquemaOnboarding, validarExtras } from '@/lib/validation/questionnaire';
 import { guardarPerfil } from '@/lib/profiles/repository';
 import { exigirSesionApi, esRespuesta } from '@/lib/auth/guards';
+import { generarYGuardar } from '@/lib/routines/service';
 import type { CoachId, Cuestionario } from '@/lib/coaches/types';
 
 export const prerender = false;
@@ -58,11 +59,26 @@ export const POST: APIRoute = async (contexto) => {
       cuestionario as Cuestionario,
     );
 
+    // Se genera la rutina en el acto: terminar el cuestionario y no recibir
+    // nada sería el peor momento posible para pedirle al usuario otro clic.
+    const generacion = await generarYGuardar(sesion.usuario.id);
+
+    if (!generacion.ok) {
+      // El perfil SÍ se guardó; solo falló la generación. Se informa sin
+      // perder lo respondido, para que no tenga que repetir el cuestionario.
+      console.error('[onboarding] Perfil guardado pero la rutina falló:', generacion.error);
+      return json(
+        { ok: true, coachId: perfil.coachId, rutinaGenerada: false, aviso: generacion.error, siguiente: '/' },
+        200,
+      );
+    }
+
     return json(
       {
         ok: true,
         coachId: perfil.coachId,
-        // La rutina se genera en la Tanda 4; de momento solo se confirma el perfil.
+        rutinaGenerada: true,
+        dias: generacion.rutina.dias.length,
         siguiente: '/rutina',
       },
       200,

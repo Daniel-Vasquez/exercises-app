@@ -1,11 +1,127 @@
 ---
 import Layout from '@/layouts/Layout.astro';
-// Marcador de posición. Se implementa en la Tanda 5.
+import { obtenerRutinaActiva } from '@/lib/routines/repository';
+import { obtenerVarios } from '@/lib/exercises/repository';
+import { obtenerCoach } from '@/lib/coaches';
+import { BODY_PARTS_ES } from '@/lib/i18n/body-parts.es';
+
+// Vista de SOLO LECTURA. El registro interactivo de series (SetTracker)
+// llega en la Tanda 5; esta pantalla existe para poder ver y revisar la
+// rutina que genera el motor.
+const usuario = Astro.locals.user!;
+const rutina = await obtenerRutinaActiva(usuario.id);
+const coach = rutina ? obtenerCoach(rutina.coachId) : null;
+
+const ids = rutina ? [...new Set(rutina.dias.flatMap((d) => d.bloques.map((b) => b.exerciseId)))] : [];
+const ejercicios = await obtenerVarios(ids);
+const porId = new Map(ejercicios.map((e) => [e.id, e]));
+
+const formatoDescanso = (s: number) => (s >= 60 ? `${Math.round(s / 60)} min` : `${s} s`);
 ---
 
-<Layout titulo="Rutina — CoachApp">
-  <div class="py-16 text-center">
-    <h1 class="text-2xl font-bold mb-2">Rutina</h1>
-    <p style="color: var(--texto-suave);">Esta pantalla llega en la <strong>Tanda 5</strong>.</p>
-  </div>
+<Layout titulo="Tu rutina — CoachApp">
+  {
+    !rutina && (
+      <div class="py-16 text-center">
+        <h1 class="text-2xl font-bold mb-2">Todavía no tienes rutina</h1>
+        <p class="mb-6" style="color: var(--texto-suave);">
+          Completa el cuestionario y la genero al instante.
+        </p>
+        <a
+          href="/onboarding"
+          class="min-h-11 inline-flex items-center px-5 rounded-xl bg-acento-500 text-white font-medium hover:bg-acento-600 transition-colors"
+        >
+          Configurar mi plan
+        </a>
+      </div>
+    )
+  }
+
+  {
+    rutina && (
+      <>
+        <header class="mb-6">
+          <p class="text-sm font-medium text-acento-600 dark:text-acento-300 mb-1">
+            {coach?.emoji} {coach?.nombre} · {rutina.splitNombre}
+          </p>
+          <h1 class="text-3xl font-bold tracking-tight">Tu rutina</h1>
+          <p class="text-sm mt-2" style="color: var(--texto-suave);">
+            {rutina.dias.length} días · versión {rutina.version}
+          </p>
+        </header>
+
+        {
+          rutina.avisos.length > 0 && (
+            <ul class="mb-6 grid gap-2">
+              {rutina.avisos.map((aviso) => (
+                <li
+                  class="text-sm rounded-lg px-3 py-2 border"
+                  style="border-color: var(--borde); background-color: var(--superficie-alt); color: var(--texto-suave);"
+                >
+                  {aviso}
+                </li>
+              ))}
+            </ul>
+          )
+        }
+
+        <div class="grid gap-6">
+          {
+            rutina.dias.map((dia) => (
+              <section class="rounded-tarjeta border overflow-hidden" style="border-color: var(--borde);">
+                <header class="px-4 py-3 border-b" style="border-color: var(--borde); background-color: var(--superficie-alt);">
+                  <h2 class="font-semibold">{dia.etiqueta}</h2>
+                  <p class="text-xs mt-0.5" style="color: var(--texto-suave);">
+                    {dia.foco.map((f) => BODY_PARTS_ES[f as keyof typeof BODY_PARTS_ES] ?? f).join(' · ')}
+                  </p>
+                </header>
+
+                {dia.aviso && (
+                  <p class="px-4 py-2 text-sm border-b" style="border-color: var(--borde); color: var(--texto-suave);">
+                    {dia.aviso}
+                  </p>
+                )}
+
+                <ol>
+                  {dia.bloques.map((bloque) => {
+                    const ejercicio = porId.get(bloque.exerciseId);
+                    return (
+                      <li class="flex gap-3 px-4 py-3 border-b last:border-b-0" style="border-color: var(--borde);">
+                        {ejercicio?.media?.image_url && (
+                          <img
+                            src={ejercicio.media.image_url}
+                            alt=""
+                            width="56"
+                            height="56"
+                            loading="lazy"
+                            class="w-14 h-14 rounded-lg object-cover shrink-0"
+                            style="background-color: var(--superficie-alt);"
+                          />
+                        )}
+                        <div class="min-w-0 flex-1">
+                          <p class="text-xs" style="color: var(--texto-suave);">{bloque.slotEtiqueta}</p>
+                          <p class="font-medium text-sm">{ejercicio?.name_es ?? bloque.exerciseId}</p>
+                          <p class="text-sm mt-1 tabular-nums" style="color: var(--texto-suave);">
+                            {bloque.medida === 'tiempo'
+                              ? `${bloque.sets} × ${bloque.segundos} s`
+                              : `${bloque.sets} × ${bloque.repsMin}-${bloque.repsMax} reps`}
+                            {' · descanso '}
+                            {formatoDescanso(bloque.restSeconds)}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </section>
+            ))
+          }
+        </div>
+
+        <p class="text-sm mt-6" style="color: var(--texto-suave);">
+          El registro de series, repeticiones y peso llega en la Tanda 5.
+        </p>
+      </>
+    )
+  }
 </Layout>

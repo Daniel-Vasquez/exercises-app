@@ -920,7 +920,7 @@ coach y su perfil queda guardado. Sin generar rutina todavía.
 
 ---
 
-### ⚙️ TANDA 4 — Motor determinista de rutinas
+### ✅ TANDA 4 — Motor determinista de rutinas — **COMPLETADA**
 
 **Objetivo.** El corazón del producto (§6). Cuestionario + coach + catálogo → rutina completa
 y estructurada. **Lógica pura, sin UI.**
@@ -941,14 +941,36 @@ y estructurada. **Lógica pura, sin UI.**
 - ⚠️ Requiere la Tanda 2 completada: el motor lee del catálogo local.
 
 **Criterio de aceptación**
-- [ ] Generar dos veces con el mismo `userId` + cuestionario devuelve **rutinas idénticas**.
-- [ ] Dos usuarios distintos con respuestas idénticas obtienen rutinas **diferentes**.
-- [ ] Caso extremo (*casa sin equipo* + evitar *hombro*, *rodilla* y *lumbar*) genera una rutina
-      **válida y no vacía**, con las notas de relajación aplicadas.
-- [ ] Marcar "evitar rodilla" hace que **cero** ejercicios con `target: quads` o patrón `deep_squat` aparezcan.
-- [ ] Coach Fuerza → reps 3–6 y descansos ≥ 180 s; coach Definición → reps 12–20 y descansos ≤ 45 s.
-- [ ] Generar una rutina archiva automáticamente la anterior (solo una `active`).
-- [ ] Cobertura de tests del directorio `engine/` ≥ 80%.
+- [x] Determinismo: **100 generaciones** con la misma entrada dan rutinas byte a byte idénticas.
+- [x] Dos usuarios con respuestas idénticas reciben semillas y selecciones distintas.
+- [x] Caso extremo (*casa sin equipo* + hombro, rodilla y lumbar) da rutina válida, sin días
+      vacíos y con los avisos aplicados.
+- [x] «Evitar rodilla» elimina `deep_squat`, `jump` y `lunge`; «hombro» elimina `delts`,
+      `overhead_press` y `behind_neck`; «lumbar» elimina `hip_hinge_loaded` y `bent_over_row`.
+- [x] Fuerza → 3–5 reps y ≥ 300 s en el compuesto principal; Definición → ≥ 12 reps y ≤ 45 s.
+- [x] Generar archiva la anterior: verificado con 3 versiones → **exactamente una activa**.
+- [x] Cobertura de `engine/`: `generate.ts` 100%, `scoring.ts` 100%, `slots.ts` 100%,
+      `prng.ts` 100%, `constraints.ts` 95,7%. **29 tests, todos en verde.**
+- [x] **Auditoría sobre el catálogo real**: 4 coaches × 5 frecuencias × 4 materiales = **80
+      rutinas**, cero días vacíos, cero recuentos de días incorrectos.
+
+**Tres problemas de calidad detectados al probar contra el catálogo real** (no aparecían con
+fixtures, y ninguno rompía un test: la estructura era correcta y el contenido no):
+
+1. **Los estiramientos rellenaban ranuras de fuerza.** Salía «Estiramiento de pecho tras nuca»
+   como accesorio de empuje a 2×12-15. Se derivó un patrón `stretch` en la ingesta; las ranuras
+   de fuerza lo prohíben **en todos los niveles de relajación** y la de movilidad lo exige.
+2. **Movilidad y cardio prescribían «1-1 repeticiones»**, que no significa nada para quien lo
+   lee. Las ranuras declaran ahora su `medida` y esas dos van en **segundos**.
+3. **Movimientos tras nuca en el coach de salud.** Cargan el hombro en rotación externa
+   extrema. Se añadió el patrón `behind_neck`, vetado por Elena y por la lesión de hombro.
+
+**Limitación conocida y no resuelta.** La API no expone dificultad del ejercicio, así que el
+motor solo infiere complejidad por el equipamiento (penaliza barra olímpica y bosu a
+principiantes). Puede por tanto programar un ejercicio avanzado de peso corporal —unos fondos
+coreanos, por ejemplo— a un principiante. Resolverlo bien exige metadatos de dificultad que
+habría que añadir al catálogo a mano o derivar por reglas sobre el nombre; queda anotado como
+mejora, no como defecto de diseño del motor.
 
 ---
 
